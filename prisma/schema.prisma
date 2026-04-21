@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  type      String
+  createdAt DateTime @default(now())
+
+  producer        Producer?
+  worker          Worker?
+  ratingsGiven    Rating[]  @relation("RaterRatings")
+  ratingsReceived Rating[]  @relation("RatedRatings")
+}
+
+model Producer {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  farmName  String
+  province  String
+  cropTypes String
+
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offers JobOffer[]
+}
+
+model Worker {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  name               String
+  dni                String
+  phone              String
+  province           String
+  skills             String
+  availabilityMonths String
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications Application[]
+}
+
+model JobOffer {
+  id            String   @id @default(cuid())
+  producerId    String
+  taskType      String
+  startDate     DateTime
+  endDate       DateTime
+  workersNeeded Int
+  dailyWage     Float
+  location      String
+  province      String
+  status        String   @default("draft")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  producer     Producer      @relation(fields: [producerId], references: [id], onDelete: Cascade)
+  applications Application[]
+}
+
+model Application {
+  id        String   @id @default(cuid())
+  offerId   String
+  workerId  String
+  message   String?
+  status    String   @default("sent")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  offer  JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  worker Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  hiring Hiring?
+
+  @@unique([offerId, workerId])
+}
+
+model Hiring {
+  id            String   @id @default(cuid())
+  applicationId String   @unique
+  totalAmount   Float
+  commission    Float
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  ratings     Rating[]
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  hiringId  String
+  raterId   String
+  ratedId   String
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  hiring Hiring @relation(fields: [hiringId], references: [id], onDelete: Cascade)
+  rater  User   @relation("RaterRatings", fields: [raterId], references: [id], onDelete: Cascade)
+  rated  User   @relation("RatedRatings", fields: [ratedId], references: [id], onDelete: Cascade)
+
+  @@unique([hiringId, raterId])
+}
