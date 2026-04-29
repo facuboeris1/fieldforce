@@ -4,15 +4,13 @@ import path from 'path'
 function createPrismaClient(): PrismaClient {
   // Production: Turso (cloud SQLite)
   if (process.env.TURSO_DATABASE_URL) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require('@libsql/client')
+    // PrismaLibSql takes a config object directly (not a pre-created client)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaLibSql } = require('@prisma/adapter-libsql')
-    const turso = createClient({
+    const adapter = new PrismaLibSql({
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
     })
-    const adapter = new PrismaLibSql(turso)
     return new PrismaClient({ adapter })
   }
 
